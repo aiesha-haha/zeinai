@@ -1,0 +1,46 @@
+# ===================== Secrets & environment =====================
+# НИКОГДА не коммитить: живые ключи и пароли
+.env
+.env.*
+!.env.example
+firebase-credentials.json
+*firebase-credentials*.json
+service-account*.json
+*.pem
+*.p12
+*.pfx
+
+# ===================== Runtime data / user uploads ================
+# Загруженные пользователями файлы (аватарки, изображения AI-студии)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# ===================== Compiled binaries ==========================
+# Артефакты сборки Go — собираются через Dockerfile, не хранятся в git
+backend/server
+backend/main_linux
+backend/kmj_worker_linux
+backend/bin/
+*.exe
+*.dll
+*.so
+
+# ===================== Node.js / Next.js ==========================
+node_modules/
+.next/
+out/
+npm-debug.log*
+yarn-error.log*
+
+# ===================== Logs & build junk ==========================
+*.log
+build_output*.txt
+*.bak
+*.backup
+*.tmp
+
+# ===================== IDE / OS ===================================
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

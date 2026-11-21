@@ -1,0 +1,160 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: https://api.zeinai.kz/api/v1
+        NEXT_PUBLIC_WS_URL: wss://api.zeinai.kz
+    container_name: zeinai_frontend
+    environment:
+      - NEXT_PUBLIC_API_URL=https://api.zeinai.kz/api/v1
+      - NEXT_PUBLIC_WS_URL=wss://api.zeinai.kz
+      - NEXT_TELEMETRY_DISABLED=1
+      - NODE_OPTIONS=--max-old-space-size=512
+      - WATCHPACK_POLLING=true
+      - TURBOPACK=0
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    command: npm run dev
+    restart: unless-stopped
+    networks:
+      - zeinai_net
+
+  backend:
+    build: ./backend
+    container_name: zeinai_backend
+    env_file:
+      - ./.env
+    # We override DB_HOST etc. to use service names
+    environment:
+      - DB_HOST=db
+      - REDIS_HOST=redis
+      - RABBITMQ_HOST=rabbitmq
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    networks:
+      - zeinai_net
+    volumes:
+      - ./backend/firebase-credentials.json:/app/firebase-credentials.json
+      - ./backend/uploads:/app/uploads
+
+  cron:
+    build: ./backend
+    container_name: zeinai_cron
+    env_file:
+      - ./.env
+    environment:
+      - DB_HOST=db
+    depends_on:
+      db:
+        condition: service_healthy
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    networks:
+      - zeinai_net
+    volumes:
+      - ./backend/firebase-credentials.json:/app/firebase-credentials.json
+    command: >
+      sh -c "while true; do
+        echo 'Running daily token reset...';
+        /app/cron_reset_tokens;
+        sleep 86400;
+      done"
+    restart: unless-stopped
+
+  kmj_worker:
+    build: ./backend
+    container_name: zeinai_kmj_worker
+    env_file:
+      - ./.env
+    environment:
+      - DB_HOST=db
+      - REDIS_HOST=redis
+      - RABBITMQ_HOST=rabbitmq
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - zeinai_net
+    volumes:
+      - ./backend/firebase-credentials.json:/app/firebase-credentials.json
+      # AI Studio writes generated images / videos here; the API serves them
+      - ./backend/uploads:/app/uploads
+    command: /app/kmj_worker
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    restart: unless-stopped
+
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: zeinai_db
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - zeinai_net
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:alpine
+    container_name: zeinai_redis
+    networks:
+      - zeinai_net
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: zeinai_rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    networks:
+      - zeinai_net
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: zeinai_tunnel
+    command: tunnel --no-autoupdate run
+    restart: always
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+    networks:
+      - zeinai_net
+
+networks:
+  zeinai_net:
+    driver: bridge
+
+volumes:
+  postgres_data:

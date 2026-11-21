@@ -1,0 +1,114 @@
+version: '3.8'
+
+services:
+  # Go Backend App (Runs migrations on start)
+  backend:
+    build: .
+    container_name: zeinai_backend
+    ports:
+      - "${APP_PORT}:8000"
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=db
+      - REDIS_HOST=redis
+      - RABBITMQ_HOST=rabbitmq
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - zeinai_net
+    restart: on-failure
+
+  # Cron Job for monthly token reset
+  cron:
+    build: .
+    container_name: zeinai_cron
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=db
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - zeinai_net
+    # Run cron every day at 00:00 (checks if it's the 1st of month)
+    command: >
+      sh -c "while true; do
+        if [ $$(date +%d) = '01' ]; then
+          echo 'Running monthly token reset...';
+          /app/cron_reset_tokens;
+        fi;
+        sleep 86400;
+      done"
+    restart: unless-stopped
+
+  # PostgreSQL with pgvector
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: zeinai_db
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - zeinai_net
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis
+  redis:
+    image: redis:alpine
+    container_name: zeinai_redis
+    ports:
+      - "${REDIS_PORT}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - zeinai_net
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # RabbitMQ
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: zeinai_rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    ports:
+      - "${RABBITMQ_PORT}:5672"
+      - "${RABBITMQ_UI_PORT}:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - zeinai_net
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+networks:
+  zeinai_net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:

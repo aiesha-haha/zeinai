@@ -1,0 +1,267 @@
+@import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-line: var(--line);
+  --color-muted: var(--muted);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-outfit: var(--font-outfit), sans-serif;
+
+  /* Brand: calm blue (contrast with white text >= 4.5:1) */
+  --color-primary: #4357d6;
+  --color-primary-hover: #3546c0;
+  --color-secondary: #7c8cf0;
+  --color-accent: #1aa3b8;
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-deep: var(--sidebar-deep);
+
+  --color-glass: rgba(255, 255, 255, 0.05);
+  --color-glass-border: rgba(255, 255, 255, 0.1);
+  --color-glass-dark: rgba(0, 0, 0, 0.4);
+
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
+}
+
+:root {
+  /* Soft light grey page, white cards (easy on the eyes) */
+  --background: #f1f3f9;
+  --foreground: #1b2140;
+  --surface: #ffffff;
+  --line: #e3e7f1;
+  --muted: #5b6380;
+  --card: #ffffff;
+  --card-border: #e3e7f1;
+
+  --sidebar: #3d4fc1;
+  --sidebar-deep: #3343ae;
+
+  /* "glass-card" is used all over the app: in the new design it is a plain white card */
+  --glass-bg: #ffffff;
+  --glass-border: #e3e7f1;
+  --glass-shadow: 0 1px 2px rgba(16, 24, 64, 0.04), 0 8px 24px rgba(16, 24, 64, 0.05);
+}
+
+.dark {
+  --background: #0f1424;
+  --foreground: #eef1fb;
+  --surface: #171d33;
+  --line: rgba(255, 255, 255, 0.09);
+  --muted: #a5acc6;
+  --card: #171d33;
+  --card-border: rgba(255, 255, 255, 0.09);
+
+  --sidebar: #1c2550;
+  --sidebar-deep: #151c40;
+
+  --glass-bg: #171d33;
+  --glass-border: rgba(255, 255, 255, 0.09);
+  --glass-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+
+  color-scheme: dark;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Visible keyboard focus everywhere */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-primary) 60%, transparent);
+  outline-offset: 2px;
+  border-radius: 0.75rem;
+}
+
+.glass-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.glass-card-light {
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+/* Shared form controls for the new design */
+.field {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 0.875rem;
+  padding: 0.75rem 1rem;
+  color: var(--foreground);
+  font-size: 0.95rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.field:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 16%, transparent);
+}
+
+.field::placeholder {
+  color: color-mix(in srgb, var(--muted) 75%, transparent);
+}
+
+.field-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+  color: var(--foreground);
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 700;
+  border-radius: 0.875rem;
+  padding: 0.75rem 1.25rem;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: color-mix(in srgb, var(--color-primary) 9%, transparent);
+  color: var(--color-primary);
+  font-weight: 700;
+  border-radius: 0.875rem;
+  padding: 0.7rem 1.1rem;
+  transition: background 0.15s;
+}
+
+.dark .btn-ghost {
+  color: #aab5ff;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-primary) 16%, transparent);
+}
+
+.btn-ghost:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Custom utility to force text visibility */
+.text-adaptive-black {
+  color: #000000 !important;
+}
+
+.dark .text-adaptive-black {
+  color: #ffffff !important;
+}
+
+@layer utilities {
+  .text-gradient {
+    background: linear-gradient(135deg, #4357d6 0%, #7c8cf0 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .bg-gradient-premium {
+    background: var(--background);
+  }
+
+  .text-muted {
+    color: var(--muted);
+  }
+}
+
+@layer base {
+  .dark\:border-white\/10 {
+    border-color: color-mix(in oklab, var(--color-white) 10%, #000000);
+  }
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float {
+    animation: none;
+  }
+}
+
+.font-comic {
+  font-family: "Comic Sans MS", "Comic Sans", "Chalkboard SE", "Comic Neue", cursive;
+}
+
+/* 3D Flip Utilities */
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+.perspective-\[1000px\] {
+  perspective: 1000px;
+}
+
+/* Print: only the printable area (certificates, plans, feedback sheets) */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+
+  .print-area {
+    position: absolute;
+    inset: 0;
+    box-shadow: none !important;
+  }
+}
